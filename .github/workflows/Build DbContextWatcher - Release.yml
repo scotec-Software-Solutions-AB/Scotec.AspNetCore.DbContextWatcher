@@ -1,4 +1,4 @@
-name: Build & Deploy Scotec.T4
+name: Build & Deploy DbContextWatcher (Release)
 
 on: [workflow_dispatch]
 

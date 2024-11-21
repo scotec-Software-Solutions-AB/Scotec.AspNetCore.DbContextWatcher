@@ -1,5 +1,4 @@
-name: Build Scotec.T4
-
+name: Build DbContextWatcher (Dev)
 on: [workflow_dispatch]
 
 jobs:
