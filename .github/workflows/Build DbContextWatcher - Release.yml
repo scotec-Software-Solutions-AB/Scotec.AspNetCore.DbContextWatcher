@@ -35,4 +35,4 @@ jobs:
  #   - name: Test
  #     run: dotnet test --no-restore --no-build --verbosity normal ./Source/Scotec.AspNetCore.DbContextWatcher.sln
     - name: Push project
-      run: dotnet nuget push ./Source/**/*.nupkg -s https://api.nuget.org/v3/index.json -k ${{secrets.NUGET_API_KEY}} --skip-duplicate
+      run: dotnet nuget push LocalPackages/*.nupkg -s https://api.nuget.org/v3/index.json -k ${{secrets.NUGET_API_KEY}} --skip-duplicate
