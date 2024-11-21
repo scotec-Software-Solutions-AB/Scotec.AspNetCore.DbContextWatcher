@@ -7,6 +7,12 @@
 		<OutputType>Library</OutputType>
 	</PropertyGroup>
 
+	<PropertyGroup>
+		<Description>Scotec.AspNetCore.DbContextWatcher</Description>
+		<Title>Scotec.AspNetCore.DbContextWatcher</Title>
+	</PropertyGroup>
+
+
 	<ItemGroup>
 		<PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.10">
 			<PrivateAssets>all</PrivateAssets>
