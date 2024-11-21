@@ -1,4 +1,4 @@
-name: Build DbContextWatcher (Dev)
+name: Build DbContextWatcher
 on: [workflow_dispatch]
 
 jobs:
