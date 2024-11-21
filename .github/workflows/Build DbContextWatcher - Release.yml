@@ -31,7 +31,7 @@ jobs:
     - name: Restore dependencies
       run: dotnet restore ./Source/Scotec.AspNetCore.DbContextWatcher.sln
     - name: Build
-      run: dotnet build --no-restore ./Source/Scotec.T4.sln -c Release -p:Version=$GITVERSION_ASSEMBLYSEMVER -p:PackageVersion=$GITVERSION_SEMVER -p:CompanyName="scotec Software Solutions AB"
+      run: dotnet build --no-restore ./Source/Scotec.AspNetCore.DbContextWatcher.sln -c Release -p:Version=$GITVERSION_ASSEMBLYSEMVER -p:PackageVersion=$GITVERSION_SEMVER -p:CompanyName="scotec Software Solutions AB"
  #   - name: Test
  #     run: dotnet test --no-restore --no-build --verbosity normal ./Source/Scotec.AspNetCore.DbContextWatcher.sln
     - name: Push project
