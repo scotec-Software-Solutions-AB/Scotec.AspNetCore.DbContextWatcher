@@ -9,9 +9,9 @@ public static class DbContextPatch<TDbContext> where TDbContext : DbContext
     public static bool Prefix(TDbContext __instance)
     {
         dynamic container = DynamicStateContainer.GetContainer(__instance);
-        if (!container.CanSaveChanges)
+        if (!container.CanSaveChanges())
         {
-            throw new DbContextWatcherException(DbContextWatcherError.ModifiedData);
+            throw new DbContextWatcherException(DbContextWatcherError.Forbidden);
         }
 
         return true;

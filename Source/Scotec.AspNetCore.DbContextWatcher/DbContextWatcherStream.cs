@@ -3,12 +3,14 @@
 internal class DbContextWatcherStream : Stream
 {
     private readonly Func<bool> _hasChanges;
+    private readonly Func<bool> _canSave;
     private readonly Stream _responseBodyStream;
 
-    public DbContextWatcherStream(Stream responseBodyStream, Func<bool> hasChanges)
+    public DbContextWatcherStream(Stream responseBodyStream, Func<bool> hasChanges, Func<bool> canSave)
     {
         _responseBodyStream = responseBodyStream;
         _hasChanges = hasChanges;
+        _canSave = canSave;
     }
 
     public override bool CanRead => _responseBodyStream.CanRead;
@@ -162,11 +164,18 @@ internal class DbContextWatcherStream : Stream
         TestDbContext(new CancellationToken(true));
     }
 
+    /// <summary>
+    /// Check whether the DbContext contains modified data. All changes must be saved before the response is sent back to the client. In the read-only context, the DbContext must generally not contain any changes.
+    /// </summary>
+    /// <param name="cancellationToken"></param>
+    /// <exception cref="DbContextWatcherException"></exception>
     private void TestDbContext(CancellationToken cancellationToken)
     {
         if (_hasChanges())
         {
-            throw new DbContextWatcherException(DbContextWatcherError.ModifiedData, cancellationToken);
+            throw _canSave() 
+                ? new DbContextWatcherException(DbContextWatcherError.UnsafedData, cancellationToken)
+                : new DbContextWatcherException(DbContextWatcherError.ModifiedData, cancellationToken);
         }
     }
 }

@@ -8,7 +8,12 @@ public enum DbContextWatcherError
     UnsafedData,
 
     /// <summary>
-    ///     The DbContext contains modified data that cannot be saved as the current session is in a read-only context.
+    ///     The DbContext contains modified data. However, changes are not permitted as the session is in a read-only context.
     /// </summary>
-    ModifiedData
+    ModifiedData,
+
+    /// <summary>
+    /// Saving changes is not permitted as the session is in the read-only context.
+    /// </summary>
+    Forbidden
 }

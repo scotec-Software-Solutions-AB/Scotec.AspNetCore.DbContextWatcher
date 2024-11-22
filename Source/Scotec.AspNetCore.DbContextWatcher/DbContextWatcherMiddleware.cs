@@ -1,4 +1,5 @@
 ﻿using System.Net;
+using System.Reflection;
 using HarmonyLib;
 using Microsoft.EntityFrameworkCore;
 
@@ -51,22 +52,10 @@ public class DbContextWatcherMiddleware<TDbContext, TAppContext>
 
     static DbContextWatcherMiddleware()
     {
-        var prefix = typeof(DbContextPatch<TDbContext>).GetMethod("Prefix");
-
         var harmony = new Harmony("com.scotec-software.dbcontextwatcher");
 
-        var saveChangesAsync = typeof(TDbContext).GetMethod(nameof(DbContext.SaveChangesAsync), new[]
-        {
-            typeof(bool), typeof(CancellationToken)
-        });
-
-        var saveChanges = typeof(TDbContext).GetMethod(nameof(DbContext.SaveChanges), new[]
-        {
-            typeof(bool)
-        });
-
-        harmony.Patch(saveChangesAsync, new HarmonyMethod(prefix));
-        harmony.Patch(saveChanges, new HarmonyMethod(prefix));
+        ApplyPatch(harmony, "SaveChangesAsync", [typeof(bool), typeof(CancellationToken)], "Prefix");
+        ApplyPatch(harmony, "SaveChanges", [typeof(bool)], "Prefix");
     }
 
     /// <summary>
@@ -81,6 +70,49 @@ public class DbContextWatcherMiddleware<TDbContext, TAppContext>
     protected HttpContext HttpContext => LocalHttpContext.Value!;
     protected TDbContext DbContext => LocalDbContext.Value!;
     protected TAppContext AppContext => LocalAppContext.Value!;
+
+    /// <summary>
+    ///     Applies a patch to the specified method.
+    /// </summary>
+    /// <param name="harmony"></param>
+    /// <param name="methodName">The method on which the patch is to be applied.</param>
+    /// <param name="parameters">List with the parameter types of the method</param>
+    /// <param name="patchName">The name of the patch.</param>
+    /// <remarks>
+    ///     If the type TDbContext is derived from DbContext, but the method you are looking for is implemented in the
+    ///     base class, a MethodInfo is still returned. However, this refers to the derived class (TDbContext) in the
+    ///     ‘ReflectedType’ property. We therefore use the declaring type here and search for the desired method again, which
+    ///     now references the correct type in the ‘ReflectedType’ property. This procedure is absolutely necessary as Harmony
+    ///     assumes that the method is implemented in the reflected type.
+    /// </remarks>
+    /// <exception cref="NotImplementedException"></exception>
+    private static void ApplyPatch(Harmony harmony, string methodName, Type[] parameters, string patchName)
+    {
+        var dbContextType = typeof(TDbContext)!;
+        MethodInfo? method;
+
+        while (true)
+        {
+            method = dbContextType?.GetMethod(methodName, parameters);
+
+            if (method == null)
+            {
+                throw new NotImplementedException($"The type {typeof(TDbContext).Name} does not implement method '{methodName}'");
+            }
+
+            if (dbContextType == method.DeclaringType)
+            {
+                break;
+            }
+
+            dbContextType = method.DeclaringType;
+        }
+        
+        var patchType = typeof(DbContextPatch<>).MakeGenericType(dbContextType!);
+        var patchMethod = patchType.GetMethod(patchName);
+
+        harmony.Patch(method, prefix: new HarmonyMethod(patchMethod));
+    }
 
     protected virtual Task OnInvoke()
     {
@@ -119,7 +151,8 @@ public class DbContextWatcherMiddleware<TDbContext, TAppContext>
         {
             DbContextWatcherError.UnsafedData =>
                 "The DbContext contains changes that have not yet been sent to the database. The response to the client may contain data that is in an invalid state.",
-            DbContextWatcherError.ModifiedData => "The database context contains modified entities in a readonly context.",
+            DbContextWatcherError.ModifiedData => "The DbContext contains modified data. However, changes are not permitted as the session is in a read-only context.",
+            DbContextWatcherError.Forbidden => "Saving changes is not permitted as the session is in the read-only context.",
             _ => throw new ArgumentOutOfRangeException(nameof(cause), cause, null)
         };
 
@@ -148,29 +181,21 @@ public class DbContextWatcherMiddleware<TDbContext, TAppContext>
         await OnInvoke();
 
         var responseBodyStream = httpContext.Response.Body;
-        var canSaveChanges = CanSaveChanges();
 
         dynamic container = DynamicStateContainer.GetContainer(dbContext);
-        container.CanSaveChanges = canSaveChanges;
+        container.CanSaveChanges = new Func<bool>(CanSaveChanges);
 
-        if (!canSaveChanges)
-        {
-            httpContext.Response.Body = new DbContextWatcherStream(responseBodyStream, HasChanges);
-        }
+        httpContext.Response.Body = new DbContextWatcherStream(responseBodyStream, HasChanges, CanSaveChanges);
 
         try
         {
             await _next(httpContext);
-
-            if (canSaveChanges && HasChanges())
-            {
-                throw new DbContextWatcherException(DbContextWatcherError.ModifiedData);
-            }
         }
         catch (DbContextWatcherException e)
         {
             httpContext.Response.Body = responseBodyStream;
-            // The database context should never track any changes while processing a safe and idempotent http method call (e.g. GET or HEAD).
+            // The database context should never track any changes while processing
+            // a safe and idempotent http method call (e.g. GET or HEAD).
             await SendResponseAsync(e.Cause);
         }
         finally
