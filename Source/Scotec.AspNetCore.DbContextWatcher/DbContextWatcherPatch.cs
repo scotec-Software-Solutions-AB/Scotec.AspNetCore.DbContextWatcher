@@ -4,7 +4,7 @@
 
 namespace Scotec.AspNetCore.DbContextWatcher;
 
-public static class DbContextPatch<TDbContext> where TDbContext : DbContext
+public static class DbContextWatcherPatch<TDbContext> where TDbContext : DbContext
 {
     public static bool Prefix(TDbContext __instance)
     {

@@ -12,7 +12,7 @@ namespace Scotec.AspNetCore.DbContextWatcher;
 /// </summary>
 /// <remarks>
 ///     <a href="http://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol#Safe_methods">Save</a> and
-///     <a href="http://en.wikipedia.org/wiki/Idempotence">idempotent</a> idempotent methods should never change the status
+///     <a href="http://en.wikipedia.org/wiki/Idempotence">idempotent</a> methods should never change the status
 ///     of the server. This also includes creating, modifying or deleting data in the database. The
 ///     DbContextWatcherMiddleware checks all incoming requests and sets the
 ///     <see cref="Microsoft.EntityFrameworkCore.DbContext" /> into the readonly state. Attempts to
@@ -108,7 +108,7 @@ public class DbContextWatcherMiddleware<TDbContext, TAppContext>
             dbContextType = method.DeclaringType;
         }
         
-        var patchType = typeof(DbContextPatch<>).MakeGenericType(dbContextType!);
+        var patchType = typeof(DbContextWatcherPatch<>).MakeGenericType(dbContextType!);
         var patchMethod = patchType.GetMethod(patchName);
 
         harmony.Patch(method, prefix: new HarmonyMethod(patchMethod));
@@ -116,6 +116,10 @@ public class DbContextWatcherMiddleware<TDbContext, TAppContext>
 
     protected virtual Task OnInvoke()
     {
+        DbContext.ChangeTracker.QueryTrackingBehavior = CanSaveChanges() 
+            ? QueryTrackingBehavior.TrackAll 
+            : QueryTrackingBehavior.NoTrackingWithIdentityResolution;
+
         return Task.CompletedTask;
     }
 
