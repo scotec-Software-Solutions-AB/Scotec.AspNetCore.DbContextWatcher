@@ -41,7 +41,7 @@ public class DbContextWatcherMiddleware<TDbContext, TSessionContext>
     ///     Save and idempotent http methods
     ///     <seealso cref="http://www.iana.org/assignments/http-methods/http-methods.xhtml" />
     /// </summary>
-    private static readonly string[] SaveMethods =
+    protected static readonly string[] SaveHttpMethods =
     [
         "GET",
         "HEAD",
@@ -139,7 +139,7 @@ public class DbContextWatcherMiddleware<TDbContext, TSessionContext>
     /// </remarks>
     protected virtual Task<bool> CanSaveChangesAsync()
     {
-        return Task.FromResult(!SaveMethods.Contains(HttpContext.Request.Method));
+        return Task.FromResult(!SaveHttpMethods.Contains(HttpContext.Request.Method));
     }
 
     /// <summary>

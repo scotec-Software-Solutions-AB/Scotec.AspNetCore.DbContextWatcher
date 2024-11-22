@@ -36,6 +36,8 @@ app.UseMiddleware<DbContextWatcherMiddleware<MyDbContext>>();
 ```
 DbContextWatcher requires a generic type parameter that specifies the type of your DbContext.
 
+### Create your own...
+If you want more control over the behaviour of DbContextWatcher, you can derive your own class from it.
 
 ``` csharp
 public class MyDbContextWatcherMiddleware : DbContextWatcherMiddleware<MyDbContext>
@@ -44,19 +46,19 @@ public class MyDbContextWatcherMiddleware : DbContextWatcherMiddleware<MyDbConte
     {
     }
 
-     protected override Task OnInvoke()
+    protected override Task OnInvokeAsync()
     {
-        return base.OnInvoke();
+        return base.OnInvokeAsync();
     }
 
-    protected override Task<bool> CanSaveChanges()
+    protected override Task<bool> CanSaveChangesAsync()
     {
-        return base.CanSaveChanges();
+        return base.CanSaveChangesAsync();
     }
 
-    protected override Task<bool> HasChanges()
+    protected override Task<bool> HasChangesAsync()
     {
-        return base.HasChanges();
+        return base.HasChangesAsync();
     }
 
     protected override Task SendResponseAsync(DbContextWatcherException exception)
@@ -65,3 +67,22 @@ public class MyDbContextWatcherMiddleware : DbContextWatcherMiddleware<MyDbConte
     }
 }
 ```
+
+To change the behaviour of DbContextWatcher, the following methods can be overridden.
+
+#### OnInvokeAsync
+OnInvokeAsync is called immediately after the middleware is called. Here you have the option of making settings in the DbContext. OnInvokeAsync sets the tracking behaviour of the DbContext to ```TrackAll``` or ```NoTrackingWithIdentityResolution``` depending on the HTTP method (POST, PUT, GET, etc.).
+``` csharp
+    protected virtual async Task OnInvokeAsync()
+    {
+        DbContext.ChangeTracker.QueryTrackingBehavior = await CanSaveChangesAsync() 
+            ? QueryTrackingBehavior.TrackAll 
+            : QueryTrackingBehavior.NoTrackingWithIdentityResolution;
+    }
+``` 
+
+####CanSaveChangesAsync
+
+####HasChangesAsync
+
+####SendResponseAsync
