@@ -32,6 +32,6 @@ DbContextWatcher is implemented as middleware. In order to activate the desired 
 To use the standard behaviour of DbContextWatcher, it is sufficient to register the DbContextWatcher middleware.
 
 ``` csharp
-app.UseMiddleware<DbContextWatcherMiddleware<MyDbContext, IAnyService>>();
+app.UseMiddleware<DbContextWatcherMiddleware<MyDbContext>>();
 ```
-DbContextWatcher requires two generic type parameters. The first parameter is the type of your DbContext. Any type registered in the IoC container can be specified as the second type. For the sake of simplicity, the DbContext can also be specified here.
+DbContextWatcher requires a generic type parameter that specifies the type of your DbContext.

@@ -7,6 +7,16 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Scotec.AspNetCore.DbContextWatcher;
 
+/// <inheritdoc/>
+public class DbContextWatcherMiddleware<TDbContext> : DbContextWatcherMiddleware<TDbContext, IServiceProvider>
+    where TDbContext : DbContext
+{
+    public DbContextWatcherMiddleware(RequestDelegate next) : base(next)
+    {
+    }
+}
+
+
 /// <summary>
 ///     Middleware for watching the database context.
 /// </summary>
@@ -23,13 +33,12 @@ namespace Scotec.AspNetCore.DbContextWatcher;
 ///     If the DbContext contains modified data, the response is not allowed to be sent and an error code is returned
 ///     instead.
 /// </remarks>
-public class DbContextWatcherMiddleware<TDbContext, TAppContext>
+public class DbContextWatcherMiddleware<TDbContext, TSessionContext>
     where TDbContext : DbContext
-    where TAppContext : class?
+    where TSessionContext : class?
 {
     /// <summary>
     ///     Save and idempotent http methods
-    ///     <a href="">aaa</a>
     ///     <seealso cref="http://www.iana.org/assignments/http-methods/http-methods.xhtml" />
     /// </summary>
     private static readonly string[] SaveMethods =
@@ -46,7 +55,7 @@ public class DbContextWatcherMiddleware<TDbContext, TAppContext>
 
     private static readonly AsyncLocal<HttpContext?> LocalHttpContext = new();
     private static readonly AsyncLocal<TDbContext?> LocalDbContext = new();
-    private static readonly AsyncLocal<TAppContext?> LocalAppContext = new();
+    private static readonly AsyncLocal<TSessionContext?> LocalSessionContext = new();
 
     private readonly RequestDelegate _next;
 
@@ -69,7 +78,7 @@ public class DbContextWatcherMiddleware<TDbContext, TAppContext>
 
     protected HttpContext HttpContext => LocalHttpContext.Value!;
     protected TDbContext DbContext => LocalDbContext.Value!;
-    protected TAppContext AppContext => LocalAppContext.Value!;
+    protected TSessionContext SessionContext => LocalSessionContext.Value!;
 
     /// <summary>
     ///     Applies a patch to the specified method.
@@ -176,11 +185,11 @@ public class DbContextWatcherMiddleware<TDbContext, TAppContext>
     /// <param name="dbContext">Tha database context.</param>
     /// <param name="appContext">Application defined context. This can be any registered service.</param>
     /// <returns>The async task.</returns>
-    public async Task Invoke(HttpContext httpContext, TDbContext dbContext, TAppContext? appContext = default)
+    public async Task Invoke(HttpContext httpContext, TDbContext dbContext, TSessionContext? appContext = default)
     {
         LocalHttpContext.Value = httpContext;
         LocalDbContext.Value = dbContext;
-        LocalAppContext.Value = appContext;
+        LocalSessionContext.Value = appContext;
 
         await OnInvoke();
 
@@ -207,7 +216,7 @@ public class DbContextWatcherMiddleware<TDbContext, TAppContext>
             httpContext.Response.Body = responseBodyStream;
             LocalHttpContext.Value = null;
             LocalDbContext.Value = null;
-            LocalAppContext.Value = null;
+            LocalSessionContext.Value = null;
         }
     }
 }
