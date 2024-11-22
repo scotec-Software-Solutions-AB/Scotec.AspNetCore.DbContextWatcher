@@ -2,11 +2,11 @@
 
 internal class DbContextWatcherStream : Stream
 {
-    private readonly Func<bool> _hasChanges;
-    private readonly Func<bool> _canSave;
+    private readonly Func<Task<bool>> _hasChanges;
+    private readonly Func<Task<bool>> _canSave;
     private readonly Stream _responseBodyStream;
 
-    public DbContextWatcherStream(Stream responseBodyStream, Func<bool> hasChanges, Func<bool> canSave)
+    public DbContextWatcherStream(Stream responseBodyStream, Func<Task<bool>> hasChanges, Func<Task<bool>> canSave)
     {
         _responseBodyStream = responseBodyStream;
         _hasChanges = hasChanges;
@@ -48,7 +48,7 @@ internal class DbContextWatcherStream : Stream
 
     public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state)
     {
-        TestDbContext();
+        TestDbContext().GetAwaiter().GetResult();
         return _responseBodyStream.BeginWrite(buffer, offset, count, callback, state);
     }
 
@@ -59,14 +59,14 @@ internal class DbContextWatcherStream : Stream
 
     public override void CopyTo(Stream destination, int bufferSize)
     {
-        TestDbContext();
+        TestDbContext().GetAwaiter().GetResult();
         _responseBodyStream.CopyTo(destination, bufferSize);
     }
 
-    public override Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken)
+    public override async Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken)
     {
-        TestDbContext(cancellationToken);
-        return _responseBodyStream.CopyToAsync(destination, bufferSize, cancellationToken);
+        await TestDbContext(cancellationToken);
+        await _responseBodyStream.CopyToAsync(destination, bufferSize, cancellationToken);
     }
 
     public override ValueTask DisposeAsync()
@@ -131,37 +131,37 @@ internal class DbContextWatcherStream : Stream
 
     public override void Write(byte[] buffer, int offset, int count)
     {
-        TestDbContext();
+        TestDbContext().GetAwaiter().GetResult();
         _responseBodyStream.Write(buffer, offset, count);
     }
 
     public override void Write(ReadOnlySpan<byte> buffer)
     {
-        TestDbContext();
+        TestDbContext().GetAwaiter().GetResult();
         _responseBodyStream.Write(buffer);
     }
 
-    public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+    public override async Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
     {
-        TestDbContext(cancellationToken);
-        return _responseBodyStream.WriteAsync(buffer, offset, count, cancellationToken);
+        await TestDbContext(cancellationToken);
+        await _responseBodyStream.WriteAsync(buffer, offset, count, cancellationToken);
     }
 
     public override async ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = new())
     {
-        TestDbContext(cancellationToken);
+        await TestDbContext(cancellationToken);
         await _responseBodyStream.WriteAsync(buffer, cancellationToken);
     }
 
     public override void WriteByte(byte value)
     {
-        TestDbContext();
+        TestDbContext().GetAwaiter().GetResult();
         _responseBodyStream.WriteByte(value);
     }
 
-    private void TestDbContext()
+    private Task TestDbContext()
     {
-        TestDbContext(new CancellationToken(true));
+        return TestDbContext(new CancellationToken(true));
     }
 
     /// <summary>
@@ -169,11 +169,11 @@ internal class DbContextWatcherStream : Stream
     /// </summary>
     /// <param name="cancellationToken"></param>
     /// <exception cref="DbContextWatcherException"></exception>
-    private void TestDbContext(CancellationToken cancellationToken)
+    private async Task TestDbContext(CancellationToken cancellationToken)
     {
-        if (_hasChanges())
+        if (await _hasChanges())
         {
-            throw _canSave() 
+            throw await _canSave() 
                 ? new DbContextWatcherException(DbContextWatcherError.UnsafedData, cancellationToken)
                 : new DbContextWatcherException(DbContextWatcherError.ModifiedData, cancellationToken);
         }

@@ -35,3 +35,34 @@ To use the standard behaviour of DbContextWatcher, it is sufficient to register 
 app.UseMiddleware<DbContextWatcherMiddleware<MyDbContext>>();
 ```
 DbContextWatcher requires a generic type parameter that specifies the type of your DbContext.
+
+
+
+``` csharp
+public class MyDbContextWatcherMiddleware : DbContextWatcherMiddleware<MyDbContext>
+{
+    public MyDbContextWatcherMiddleware(RequestDelegate next) : base(next)
+    {
+    }
+
+     protected override Task OnInvoke()
+    {
+        return base.OnInvoke();
+    }
+
+    protected override Task<bool> CanSaveChanges()
+    {
+        return base.CanSaveChanges();
+    }
+
+    protected override Task<bool> HasChanges()
+    {
+        return base.HasChanges();
+    }
+
+    protected override Task SendResponseAsync(DbContextWatcherException exception)
+    {
+        return base.SendResponseAsync(exception);
+    }
+}
+```

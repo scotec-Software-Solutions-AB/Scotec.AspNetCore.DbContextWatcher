@@ -9,7 +9,7 @@ public static class DbContextWatcherPatch<TDbContext> where TDbContext : DbConte
     public static bool Prefix(TDbContext __instance)
     {
         dynamic container = DynamicStateContainer.GetContainer(__instance);
-        if (!container.CanSaveChanges())
+        if (!((Task<bool>)container.CanSaveChanges()).GetAwaiter().GetResult())
         {
             throw new DbContextWatcherException(DbContextWatcherError.Forbidden);
         }

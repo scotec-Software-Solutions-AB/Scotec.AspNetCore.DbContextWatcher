@@ -1,6 +1,6 @@
 ﻿namespace Scotec.AspNetCore.DbContextWatcher;
 
-internal class DbContextWatcherException : OperationCanceledException
+public class DbContextWatcherException : OperationCanceledException
 {
     public DbContextWatcherException(DbContextWatcherError cause)
         : this(cause, new CancellationToken(true))

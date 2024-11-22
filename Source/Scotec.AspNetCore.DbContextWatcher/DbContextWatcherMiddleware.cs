@@ -123,25 +123,23 @@ public class DbContextWatcherMiddleware<TDbContext, TSessionContext>
         harmony.Patch(method, prefix: new HarmonyMethod(patchMethod));
     }
 
-    protected virtual Task OnInvoke()
+    protected virtual async Task OnInvoke()
     {
-        DbContext.ChangeTracker.QueryTrackingBehavior = CanSaveChanges() 
+        DbContext.ChangeTracker.QueryTrackingBehavior = await CanSaveChanges() 
             ? QueryTrackingBehavior.TrackAll 
             : QueryTrackingBehavior.NoTrackingWithIdentityResolution;
-
-        return Task.CompletedTask;
     }
 
     /// <summary>
-    ///     Returns true if changes may be saved in the database while the request is being processed. By default, saving is
-    ///     only permitted during the processing of POST, PUT, PATCH and DELETE requests.
+    ///     Returns true if changes can be saved in the database while the request is being processed. By default, saving is
+    ///     only permitted during the processing of e.g. POST, PUT, PATCH or DELETE requests.
     /// </summary>
     /// <remarks>
     ///     This method can be overridden to implement your own validation rules.
     /// </remarks>
-    protected virtual bool CanSaveChanges()
+    protected virtual Task<bool> CanSaveChanges()
     {
-        return !SaveMethods.Contains(HttpContext.Request.Method);
+        return Task.FromResult(!SaveMethods.Contains(HttpContext.Request.Method));
     }
 
     /// <summary>
@@ -150,23 +148,26 @@ public class DbContextWatcherMiddleware<TDbContext, TSessionContext>
     /// <remarks>
     ///     This method can be overwritten to implement your own change detection.
     /// </remarks>
-    protected virtual bool HasChanges()
+    protected virtual Task<bool> HasChanges()
     {
-        return DbContext.ChangeTracker.HasChanges();
+        return Task.FromResult(DbContext.ChangeTracker.HasChanges());
     }
 
-    protected virtual async Task SendResponseAsync(DbContextWatcherError cause)
+    /// <summary>
+    /// Send an error response to the client.
+    /// </summary>
+    protected virtual async Task SendResponseAsync(DbContextWatcherException exception)
     {
         HttpContext.Response.ContentType = "application/json";
         HttpContext.Response.StatusCode = (int)HttpStatusCode.InternalServerError;
 
-        var detailed = cause switch
+        var detailed = exception.Cause switch
         {
             DbContextWatcherError.UnsafedData =>
                 "The DbContext contains changes that have not yet been sent to the database. The response to the client may contain data that is in an invalid state.",
             DbContextWatcherError.ModifiedData => "The DbContext contains modified data. However, changes are not permitted as the session is in a read-only context.",
             DbContextWatcherError.Forbidden => "Saving changes is not permitted as the session is in the read-only context.",
-            _ => throw new ArgumentOutOfRangeException(nameof(cause), cause, null)
+            _ => throw new ArgumentOutOfRangeException(nameof(DbContextWatcherException.Cause), exception.Cause, null)
         };
 
         var response = new
@@ -196,7 +197,7 @@ public class DbContextWatcherMiddleware<TDbContext, TSessionContext>
         var responseBodyStream = httpContext.Response.Body;
 
         dynamic container = DynamicStateContainer.GetContainer(dbContext);
-        container.CanSaveChanges = new Func<bool>(CanSaveChanges);
+        container.CanSaveChanges = new Func<Task<bool>>(CanSaveChanges);
 
         httpContext.Response.Body = new DbContextWatcherStream(responseBodyStream, HasChanges, CanSaveChanges);
 
@@ -209,7 +210,7 @@ public class DbContextWatcherMiddleware<TDbContext, TSessionContext>
             httpContext.Response.Body = responseBodyStream;
             // The database context should never track any changes while processing
             // a safe and idempotent http method call (e.g. GET or HEAD).
-            await SendResponseAsync(e.Cause);
+            await SendResponseAsync(e);
         }
         finally
         {
