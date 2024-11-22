@@ -21,3 +21,17 @@ DbContextWatcherMiddleware checks the current status of the DbContext before a r
 When making read or write API calls, the same code parts are often used internally for querying entities. While change tracking is often switched on for write calls (e.g. POST or PUT), it should be deactivated for purely read accesses (e.g. GET) for performance reasons.
 However, this means that tracking must be activated or deactivated at these points depending on the request.
 DbContextWatcher automatically sets the default behaviour for the tracking behaviour of the DbContext to ```TrackingAll``` for write API calls and to ```NoTrackingWithIdentityResolution``` for read API calls.
+
+
+## Change detection
+When processing read-only API calls, DbContextWatcher checks whether an attempt was made to modify data immediately before returning the response to the client. For this purpose, ```HasChanges``` is called on the change tracker. If any changes are recognised here, DbContextWatcher interprets this as an attempt to manipulate data and returns an error to the client. This can be particularly helpful when developing an app in order to detect potential errors that could lead to data inconsistency or performance issues.
+
+## How to use DbContextWatcher
+DbContextWatcher is implemented as middleware. In order to activate the desired monitoring of the DbContext as early as possible, DbContextWatcher should be installed as one of the first middlewares if possible, but at the latest before the first middleware that initiates database calls.
+
+To use the standard behaviour of DbContextWatcher, it is sufficient to register the DbContextWatcher middleware.
+
+``` csharp
+app.UseMiddleware<DbContextWatcherMiddleware<MyDbContext, IAnyService>>();
+```
+DbContextWatcher requires two generic type parameters. The first parameter is the type of your DbContext. Any type registered in the IoC container can be specified as the second type. For the sake of simplicity, the DbContext can also be specified here.
