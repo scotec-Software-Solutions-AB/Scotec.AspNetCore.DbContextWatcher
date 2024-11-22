@@ -123,9 +123,9 @@ public class DbContextWatcherMiddleware<TDbContext, TSessionContext>
         harmony.Patch(method, prefix: new HarmonyMethod(patchMethod));
     }
 
-    protected virtual async Task OnInvoke()
+    protected virtual async Task OnInvokeAsync()
     {
-        DbContext.ChangeTracker.QueryTrackingBehavior = await CanSaveChanges() 
+        DbContext.ChangeTracker.QueryTrackingBehavior = await CanSaveChangesAsync() 
             ? QueryTrackingBehavior.TrackAll 
             : QueryTrackingBehavior.NoTrackingWithIdentityResolution;
     }
@@ -137,7 +137,7 @@ public class DbContextWatcherMiddleware<TDbContext, TSessionContext>
     /// <remarks>
     ///     This method can be overridden to implement your own validation rules.
     /// </remarks>
-    protected virtual Task<bool> CanSaveChanges()
+    protected virtual Task<bool> CanSaveChangesAsync()
     {
         return Task.FromResult(!SaveMethods.Contains(HttpContext.Request.Method));
     }
@@ -148,7 +148,7 @@ public class DbContextWatcherMiddleware<TDbContext, TSessionContext>
     /// <remarks>
     ///     This method can be overwritten to implement your own change detection.
     /// </remarks>
-    protected virtual Task<bool> HasChanges()
+    protected virtual Task<bool> HasChangesAsync()
     {
         return Task.FromResult(DbContext.ChangeTracker.HasChanges());
     }
@@ -192,14 +192,14 @@ public class DbContextWatcherMiddleware<TDbContext, TSessionContext>
         LocalDbContext.Value = dbContext;
         LocalSessionContext.Value = appContext;
 
-        await OnInvoke();
+        await OnInvokeAsync();
 
         var responseBodyStream = httpContext.Response.Body;
 
         dynamic container = DynamicStateContainer.GetContainer(dbContext);
-        container.CanSaveChanges = new Func<Task<bool>>(CanSaveChanges);
+        container.CanSaveChanges = new Func<Task<bool>>(CanSaveChangesAsync);
 
-        httpContext.Response.Body = new DbContextWatcherStream(responseBodyStream, HasChanges, CanSaveChanges);
+        httpContext.Response.Body = new DbContextWatcherStream(responseBodyStream, HasChangesAsync, CanSaveChangesAsync);
 
         try
         {

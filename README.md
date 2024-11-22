@@ -37,7 +37,6 @@ app.UseMiddleware<DbContextWatcherMiddleware<MyDbContext>>();
 DbContextWatcher requires a generic type parameter that specifies the type of your DbContext.
 
 
-
 ``` csharp
 public class MyDbContextWatcherMiddleware : DbContextWatcherMiddleware<MyDbContext>
 {
