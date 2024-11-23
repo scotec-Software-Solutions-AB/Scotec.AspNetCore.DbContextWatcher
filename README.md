@@ -71,18 +71,34 @@ public class MyDbContextWatcherMiddleware : DbContextWatcherMiddleware<MyDbConte
 To change the behaviour of DbContextWatcher, the following methods can be overridden.
 
 #### OnInvokeAsync
-OnInvokeAsync is called immediately after the middleware is called. Here you have the option of making settings in the DbContext. OnInvokeAsync sets the tracking behaviour of the DbContext to ```TrackAll``` or ```NoTrackingWithIdentityResolution``` depending on the HTTP method (POST, PUT, GET, etc.).
+OnInvokeAsync is called immediately after the middleware is invoked. Here you have the option of making settings in the DbContext. DbContextWatcher sets the tracking behaviour of the DbContext to ```TrackAll``` or ```NoTrackingWithIdentityResolution``` depending on the HTTP method (POST, PUT, GET, etc.).
 ``` csharp
-    protected virtual async Task OnInvokeAsync()
-    {
-        DbContext.ChangeTracker.QueryTrackingBehavior = await CanSaveChangesAsync() 
-            ? QueryTrackingBehavior.TrackAll 
-            : QueryTrackingBehavior.NoTrackingWithIdentityResolution;
-    }
+protected virtual async Task OnInvokeAsync()
+{
+    DbContext.ChangeTracker.QueryTrackingBehavior = await CanSaveChangesAsync() 
+        ? QueryTrackingBehavior.TrackAll 
+        : QueryTrackingBehavior.NoTrackingWithIdentityResolution;
+}
 ``` 
 
-####CanSaveChangesAsync
+#### CanSaveChangesAsync
 
-####HasChangesAsync
+CanSaveChangesAsync determines whether the DbContext may save changes to the database or not.
 
-####SendResponseAsync
+``` csharp
+protected virtual Task<bool> CanSaveChangesAsync()
+{
+    return Task.FromResult(!SaveHttpMethods.Contains(HttpContext.Request.Method));
+}
+```
+#### HasChangesAsync
+You can implement your own checks by overriding the method. 
+For example, you may want to write log information to the database. In this case, new entries in the log table could be ignored and the DbContext considered unchanged. However, even if this is a valid use case, the use of a separate DbContext for writing to the log table should be considered.
+HasChangesAsync checks whether the change tracker has detected any modified data.
+``` csharp
+    protected virtual Task<bool> HasChangesAsync()
+    {
+        return Task.FromResult(DbContext.ChangeTracker.HasChanges());
+    }
+```
+#### SendResponseAsync
