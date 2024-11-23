@@ -1,0 +1,27 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
+
+	<PropertyGroup>
+		<TargetFramework>net8.0</TargetFramework>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+		<OutputType>Library</OutputType>
+	</PropertyGroup>
+
+	<PropertyGroup>
+		<Description>The Scotec.AspNetCore.DbContextWatcher provides monitoring for changes in the DbContext to enhance safety, idempotency, integrity, and consistency in HTTP methods within ASP.NETCore applications. By tracking database changes, it ensures safe operations (no unintended side effects), maintains idempotency (operations like GET are repeatable without altering state), and upholds data integrity and consistency across HTTP requests like POST or PUT.</Description>
+		<Description>Scotec.AspNetCore.DbContextWatcher</Description>
+		<Title>Scotec.AspNetCore.DbContextWatcher</Title>
+		<Description>Scotec.AspNetCore.DbContextWatcher</Description>
+	</PropertyGroup>
+
+
+	<ItemGroup>
+		<PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.10">
+			<PrivateAssets>all</PrivateAssets>
+			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive; compile</IncludeAssets>
+		</PackageReference>
+		<PackageReference Include="System.Text.Json" Version="8.0.5" />
+		<PackageReference Include="Lib.Harmony" Version="2.3.3" />
+	</ItemGroup>
+
+</Project>
