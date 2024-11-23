@@ -91,14 +91,22 @@ protected virtual Task<bool> CanSaveChangesAsync()
     return Task.FromResult(!SaveHttpMethods.Contains(HttpContext.Request.Method));
 }
 ```
+
 #### HasChangesAsync
-You can implement your own checks by overriding the method. 
-For example, you may want to write log information to the database. In this case, new entries in the log table could be ignored and the DbContext considered unchanged. However, even if this is a valid use case, the use of a separate DbContext for writing to the log table should be considered.
+
 HasChangesAsync checks whether the change tracker has detected any modified data.
+
 ``` csharp
     protected virtual Task<bool> HasChangesAsync()
     {
         return Task.FromResult(DbContext.ChangeTracker.HasChanges());
     }
 ```
+You can implement your own checks by overriding this method. 
+For example, you may want to write log information to the database. In this case, new entries related to the log table could be ignored and the DbContext could be considered unchanged in that case. However, even if this is a valid use case, the use of a separate DbContext for writing into the log table should be considered.
+
 #### SendResponseAsync
+SendResponseAsync sends a response with the Http status 500 back to the client.
+
+The method can be overwritten to send back your own response. Alternatively, an exception can also be thrown here, which can then be processed later in an exception handler middleware.
+
