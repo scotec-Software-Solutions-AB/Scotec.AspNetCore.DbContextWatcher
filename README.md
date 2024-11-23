@@ -7,9 +7,9 @@ The Scotec.AspNetCore.DbContextWatcher provides monitoring for changes in the Db
 ## Integrity and consistency
 In a REST API, the best practice is to write data to the database before sending the response to the client. This approach ensures data consistency and integrity. Here’s why:
 
-- **Data Integrity**</b>: Ensures that the changes are committed successfully before informing the client. This avoids scenarios where the client is informed of a successful operation, but the data is not actually saved.
+- **Data Integrity**: Ensures that the changes are committed successfully before informing the client. This avoids scenarios where the client is informed of a successful operation, but the data is not actually saved.
 
-- **Error Handling**</b>: Allows you to handle any errors or exceptions during the database write operation and send an appropriate error response to the client.
+- **Error Handling**: Allows you to handle any errors or exceptions during the database write operation and send an appropriate error response to the client.
 
 - **Transactional Consistency**: Guarantees that the entire operation (including any business logic and database writes) is completed within a single transaction, ensuring atomicity.
 
