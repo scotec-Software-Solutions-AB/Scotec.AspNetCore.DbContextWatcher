@@ -2,8 +2,8 @@
 
 internal class DbContextWatcherStream : Stream
 {
-    private readonly Func<Task<bool>> _hasChanges;
     private readonly Func<Task<bool>> _canSave;
+    private readonly Func<Task<bool>> _hasChanges;
     private readonly Stream _responseBodyStream;
 
     public DbContextWatcherStream(Stream responseBodyStream, Func<Task<bool>> hasChanges, Func<Task<bool>> canSave)
@@ -46,7 +46,8 @@ internal class DbContextWatcherStream : Stream
         return _responseBodyStream.BeginRead(buffer, offset, count, callback, state);
     }
 
-    public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state)
+    public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback? callback,
+        object? state)
     {
         TestDbContext().GetAwaiter().GetResult();
         return _responseBodyStream.BeginWrite(buffer, offset, count, callback, state);
@@ -165,7 +166,8 @@ internal class DbContextWatcherStream : Stream
     }
 
     /// <summary>
-    /// Check whether the DbContext contains modified data. All changes must be saved before the response is sent back to the client. In the read-only context, the DbContext must generally not contain any changes.
+    ///     Check whether the DbContext contains modified data. All changes must be saved before the response is sent back to
+    ///     the client. In the read-only context, the DbContext must generally not contain any changes.
     /// </summary>
     /// <param name="cancellationToken"></param>
     /// <exception cref="DbContextWatcherException"></exception>
@@ -173,7 +175,7 @@ internal class DbContextWatcherStream : Stream
     {
         if (await _hasChanges())
         {
-            throw await _canSave() 
+            throw await _canSave()
                 ? new DbContextWatcherException(DbContextWatcherError.UnsafedData, cancellationToken)
                 : new DbContextWatcherException(DbContextWatcherError.ModifiedData, cancellationToken);
         }

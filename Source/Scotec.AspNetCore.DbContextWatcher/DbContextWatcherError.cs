@@ -13,7 +13,7 @@ public enum DbContextWatcherError
     ModifiedData,
 
     /// <summary>
-    /// Saving changes is not permitted as the session is in the read-only context.
+    ///     Saving changes is not permitted as the session is in the read-only context.
     /// </summary>
     Forbidden
 }

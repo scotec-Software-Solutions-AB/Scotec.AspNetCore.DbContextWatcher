@@ -7,7 +7,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Scotec.AspNetCore.DbContextWatcher;
 
-/// <inheritdoc/>
+/// <inheritdoc />
 public class DbContextWatcherMiddleware<TDbContext> : DbContextWatcherMiddleware<TDbContext, IServiceProvider>
     where TDbContext : DbContext
 {
@@ -16,23 +16,13 @@ public class DbContextWatcherMiddleware<TDbContext> : DbContextWatcherMiddleware
     }
 }
 
-
 /// <summary>
-///     Middleware for watching the database context.
+///     The DbContextWatcherMiddleware provides monitoring for changes in the DbContext to enhance safety,
+///     idempotency, integrity, and consistency in HTTP methods within ASP.NETCore applications. By tracking database
+///     changes, it ensures safe operations (no unintended side effects), maintains idempotency (operations like GET are
+///     repeatable without altering state), and upholds data integrity and consistency across HTTP requests like POST or
+///     PUT.
 /// </summary>
-/// <remarks>
-///     <a href="http://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol#Safe_methods">Save</a> and
-///     <a href="http://en.wikipedia.org/wiki/Idempotence">idempotent</a> methods should never change the status
-///     of the server. This also includes creating, modifying or deleting data in the database. The
-///     DbContextWatcherMiddleware checks all incoming requests and sets the
-///     <see cref="Microsoft.EntityFrameworkCore.DbContext" /> into the readonly state. Attempts to
-///     call the Save method lead to an exception.<br /><br />
-///     In a REST WebAPI, the best practice is to write data to the database before sending the response to the client.
-///     This approach ensures data consistency and integrity.
-///     DbContextWatcherMiddleware checks the current status of the DbContext before a response is sent back to the client.
-///     If the DbContext contains modified data, the response is not allowed to be sent and an error code is returned
-///     instead.
-/// </remarks>
 public class DbContextWatcherMiddleware<TDbContext, TSessionContext>
     where TDbContext : DbContext
     where TSessionContext : class?
@@ -106,7 +96,8 @@ public class DbContextWatcherMiddleware<TDbContext, TSessionContext>
 
             if (method == null)
             {
-                throw new NotImplementedException($"The type {typeof(TDbContext).Name} does not implement method '{methodName}'");
+                throw new NotImplementedException(
+                    $"The type {typeof(TDbContext).Name} does not implement method '{methodName}'");
             }
 
             if (dbContextType == method.DeclaringType)
@@ -116,17 +107,17 @@ public class DbContextWatcherMiddleware<TDbContext, TSessionContext>
 
             dbContextType = method.DeclaringType;
         }
-        
+
         var patchType = typeof(DbContextWatcherPatch<>).MakeGenericType(dbContextType!);
         var patchMethod = patchType.GetMethod(patchName);
 
-        harmony.Patch(method, prefix: new HarmonyMethod(patchMethod));
+        harmony.Patch(method, new HarmonyMethod(patchMethod));
     }
 
     protected virtual async Task OnInvokeAsync()
     {
-        DbContext.ChangeTracker.QueryTrackingBehavior = await CanSaveChangesAsync() 
-            ? QueryTrackingBehavior.TrackAll 
+        DbContext.ChangeTracker.QueryTrackingBehavior = await CanSaveChangesAsync()
+            ? QueryTrackingBehavior.TrackAll
             : QueryTrackingBehavior.NoTrackingWithIdentityResolution;
     }
 
@@ -154,7 +145,7 @@ public class DbContextWatcherMiddleware<TDbContext, TSessionContext>
     }
 
     /// <summary>
-    /// Send an error response to the client.
+    ///     Send an error response to the client.
     /// </summary>
     protected virtual async Task SendResponseAsync(DbContextWatcherException exception)
     {
@@ -165,8 +156,10 @@ public class DbContextWatcherMiddleware<TDbContext, TSessionContext>
         {
             DbContextWatcherError.UnsafedData =>
                 "The DbContext contains changes that have not yet been sent to the database. The response to the client may contain data that is in an invalid state.",
-            DbContextWatcherError.ModifiedData => "The DbContext contains modified data. However, changes are not permitted as the session is in a read-only context.",
-            DbContextWatcherError.Forbidden => "Saving changes is not permitted as the session is in the read-only context.",
+            DbContextWatcherError.ModifiedData =>
+                "The DbContext contains modified data. However, changes are not permitted as the session is in a read-only context.",
+            DbContextWatcherError.Forbidden =>
+                "Saving changes is not permitted as the session is in the read-only context.",
             _ => throw new ArgumentOutOfRangeException(nameof(DbContextWatcherException.Cause), exception.Cause, null)
         };
 
@@ -199,7 +192,8 @@ public class DbContextWatcherMiddleware<TDbContext, TSessionContext>
         dynamic container = DynamicStateContainer.GetContainer(dbContext);
         container.CanSaveChanges = new Func<Task<bool>>(CanSaveChangesAsync);
 
-        httpContext.Response.Body = new DbContextWatcherStream(responseBodyStream, HasChangesAsync, CanSaveChangesAsync);
+        httpContext.Response.Body =
+            new DbContextWatcherStream(responseBodyStream, HasChangesAsync, CanSaveChangesAsync);
 
         try
         {

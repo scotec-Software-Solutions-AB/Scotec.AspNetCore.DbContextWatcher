@@ -8,8 +8,10 @@
 	</PropertyGroup>
 
 	<PropertyGroup>
+		<Description>The Scotec.AspNetCore.DbContextWatcher provides monitoring for changes in the DbContext to enhance safety, idempotency, integrity, and consistency in HTTP methods within ASP.NETCore applications. By tracking database changes, it ensures safe operations (no unintended side effects), maintains idempotency (operations like GET are repeatable without altering state), and upholds data integrity and consistency across HTTP requests like POST or PUT.</Description>
 		<Description>Scotec.AspNetCore.DbContextWatcher</Description>
 		<Title>Scotec.AspNetCore.DbContextWatcher</Title>
+		<Description>Scotec.AspNetCore.DbContextWatcher</Description>
 	</PropertyGroup>
 
 
