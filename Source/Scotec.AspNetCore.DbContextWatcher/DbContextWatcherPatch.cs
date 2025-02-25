@@ -23,7 +23,7 @@ public static class DbContextWatcherPatch<TDbContext> where TDbContext : DbConte
             return true;
 
         }
-        catch (RuntimeBinderException e)
+        catch (RuntimeBinderException)
         {
             // Do nothing.
         }
