@@ -29,7 +29,8 @@ public class DynamicStateContainer : DynamicObject
             return true;
         }
 
-        result = null;
-        return false;
+        // Use default action.
+        result = () => true;
+        return true;
     }
 }
