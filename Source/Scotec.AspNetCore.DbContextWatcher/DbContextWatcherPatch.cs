@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.CSharp.RuntimeBinder;
+using Microsoft.EntityFrameworkCore;
 
 // ReSharper disable InconsistentNaming
 
@@ -8,10 +9,23 @@ public static class DbContextWatcherPatch<TDbContext> where TDbContext : DbConte
 {
     public static bool Prefix(TDbContext __instance)
     {
-        dynamic container = DynamicStateContainer.GetContainer(__instance);
-        if (!((Task<bool>)container.CanSaveChanges()).GetAwaiter().GetResult())
+        try
         {
-            throw new DbContextWatcherException(DbContextWatcherError.Forbidden);
+            dynamic container = DynamicStateContainer.GetContainer(__instance);
+            if (container.CanSaveChanges() is Task<bool> task)
+            {
+                if (!task.GetAwaiter().GetResult())
+                {
+                    throw new DbContextWatcherException(DbContextWatcherError.Forbidden);
+                }
+            }
+          
+            return true;
+
+        }
+        catch (RuntimeBinderException e)
+        {
+            // Do nothing.
         }
 
         return true;
